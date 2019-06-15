@@ -61,7 +61,7 @@ namespace NG_Core_Auth.Controllers
                 errorList.Add(error.Description);
             }
 
-            return BadRequest(new JsonResult(errorList);
+            return BadRequest(new JsonResult(errorList));
         }
 
         [HttpPost("[action]")]

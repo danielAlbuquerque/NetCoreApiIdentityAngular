@@ -1,46 +1,104 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+using Microsoft.EntityFrameworkCore;
+using NG_Core_Auth.Data;
+using NG_Core_Auth.Models;
 
 namespace NG_Core_Auth.Controllers
 {
     [Route("api/[controller]")]
     public class ProductController : Controller
     {
+
+        private readonly ApplicationDbContext _db;
+
+        public ProductController(ApplicationDbContext db)
+        {
+            _db = db;
+        }
+
         // GET: api/values
-        [HttpGet]
-        public IEnumerable<string> Get()
+        [HttpGet("[action]")]
+        [Authorize("RequireLoggedIn")]
+        public IActionResult GetProducts()
         {
-            return new string[] { "value1", "value2" };
+            return Ok(_db.Products.ToList());
         }
 
-        // GET api/values/5
-        [HttpGet("{id}")]
-        public string Get(int id)
+        [HttpPost("[action]")]
+        [Authorize("Admin")]
+        public async Task<IActionResult> AddProduct([FromBody] ProductModel formdata)
         {
-            return "value";
+            var newProduct = new ProductModel
+            {
+                Name = formdata.Name,
+                ImageUrl = formdata.ImageUrl,
+                Description = formdata.Description,
+                OutOfStock = formdata.OutOfStock,
+                Price = formdata.Price
+            };
+
+            await _db.Products.AddAsync(newProduct);
+
+            await _db.SaveChangesAsync();
+
+            return Ok();
+
         }
 
-        // POST api/values
-        [HttpPost]
-        public void Post([FromBody]string value)
+        [HttpPut("[action]/{id}")]
+        [Authorize("Admin")]
+        public async Task<IActionResult> UpdateProduct([FromRoute] int id,[FromBody] ProductModel formdata)
         {
+            if (!ModelState.IsValid) 
+            {
+                return BadRequest(ModelState);
+            }
+
+            var product = _db.Products.Where(prod => prod.ProductId == id).FirstOrDefault();
+
+            if (product == null)
+            {
+                return NotFound();
+            }
+
+            product.Name = formdata.Name;
+            product.Description = formdata.Description;
+            product.ImageUrl = formdata.ImageUrl;
+            product.OutOfStock = formdata.OutOfStock;
+            product.Price = formdata.Price;
+
+            _db.Entry(product).State = EntityState.Modified;
+
+            await _db.SaveChangesAsync();
+
+            return Ok();
         }
 
-        // PUT api/values/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody]string value)
+        [HttpDelete("[action]/{id}")]
+        [Authorize("Admin")]
+        public async Task<IActionResult> DeleteProduct([FromRoute] int id)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var product = await _db.Products.FindAsync(id);
+
+            if (product == null)
+            {
+                return NotFound();
+            }
+
+            _db.Products.Remove(product);
+
+            await _db.SaveChangesAsync();
+
+            return Ok();
         }
 
-        // DELETE api/values/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
-        {
-        }
     }
 }

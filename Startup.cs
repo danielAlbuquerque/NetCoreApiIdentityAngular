@@ -45,9 +45,11 @@ namespace NG_Core_Auth
             });
 
             // database connection
-            services.AddDbContext<ApplicationDbContext>(options => {
-                options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection"));
-            });
+            services.AddEntityFrameworkNpgsql().AddDbContext<ApplicationDbContext>().BuildServiceProvider();
+            // services.AddDbContext<ApplicationDbContext>(options => {
+            //     options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection"));
+
+            // });
 
             // Identity framework
             services.AddIdentity<IdentityUser, IdentityRole>(options => {
